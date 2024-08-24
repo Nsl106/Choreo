@@ -277,6 +277,9 @@ export class DocumentManager {
     hotkeys("f5,ctrl+shift+r,ctrl+r", function (event, handler) {
       event.preventDefault();
     });
+    hotkeys("ctrl+shift+r", () => {
+      this.generateAll();
+    });
     hotkeys("command+g,ctrl+g,g", () => {
       if (!this.model.document.pathlist.activePath.generating) {
         this.generateWithToastsAndExport(
