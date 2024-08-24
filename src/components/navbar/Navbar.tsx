@@ -65,19 +65,28 @@ class Navbar extends Component<Props, State> {
           )
         )}
 
-          <Button
-              variant={"text"}
-              onClick={() => {
-                  this.context.openLastFile();
-              }}
-          >
-              Reopen File
-          </Button>
+        <Button
+            variant={"text"}
+            onClick={() => {
+                this.context.openLastFile();
+            }}
+        >
+            Reopen File
+        </Button>
 
-          <Button
+        <Button
           variant={"text"}
           onClick={() => {
-            this.context.generateAll();
+            this.context.generateAll(false);
+          }}
+        >
+            Regenerate Stale
+        </Button>
+
+        <Button
+          variant={"text"}
+          onClick={() => {
+            this.context.generateAll(true);
           }}
         >
             Regenerate All

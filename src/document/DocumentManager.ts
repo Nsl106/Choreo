@@ -119,11 +119,18 @@ export class DocumentManager {
     tauriWindow.appWindow.emit("file-ready");
   }
 
-  async generateAll() {
+  async generateAll(includeNonStale: boolean) {
     await Promise.all(
-      this.model.document.pathlist.pathUUIDs.map((uuid) =>
-        this.model!.generatePath(uuid)
-      )
+      this.model.document.pathlist.pathUUIDs.map((uuid) => {
+        const pathStore = this.model.document.pathlist.paths.get(uuid);
+        if (pathStore === undefined) {
+          throw "Path store is undefined";
+        }
+        if (pathStore.isTrajectoryStale || includeNonStale) {
+          this.model!.generatePath(uuid)
+        }
+
+      })
     ).then(() => this.exportAllTrajectories());
   }
 
@@ -278,7 +285,7 @@ export class DocumentManager {
       event.preventDefault();
     });
     hotkeys("ctrl+shift+r", () => {
-      this.generateAll();
+      this.generateAll(false);
     });
     hotkeys("ctrl+r", () => {
       this.openLastFile();
@@ -291,6 +298,7 @@ export class DocumentManager {
       }
     });
     hotkeys("command+z,ctrl+z", () => {
+
       this.undo();
     });
     hotkeys("command+shift+z,ctrl+shift+z,ctrl+y", () => {
