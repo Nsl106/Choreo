@@ -280,6 +280,9 @@ export class DocumentManager {
     hotkeys("ctrl+shift+r", () => {
       this.generateAll();
     });
+    hotkeys("ctrl+r", () => {
+      this.openLastFile();
+    });
     hotkeys("command+g,ctrl+g,g", () => {
       if (!this.model.document.pathlist.activePath.generating) {
         this.generateWithToastsAndExport(
