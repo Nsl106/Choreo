@@ -3,7 +3,7 @@ import DocumentManagerContext from "../../document/DocumentManager";
 import Tooltip from "@mui/material/Tooltip";
 import styles from "./Navbar.module.css";
 import { observer } from "mobx-react";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Button, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import {
   NavbarItemData,
   NavbarItemSectionEnds
@@ -64,8 +64,18 @@ class Navbar extends Component<Props, State> {
             <></>
           )
         )}
+
+        <Button
+          variant={"text"}
+          onClick={() => {
+            this.context.generateAll();
+          }}
+        >
+          Regenerate All
+        </Button>
       </div>
     );
   }
 }
+
 export default observer(Navbar);
