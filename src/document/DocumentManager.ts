@@ -55,7 +55,8 @@ export class DocumentManager {
     this.setupEventListeners()
       .then(() => this.newFile())
       .then(() => this.model.uiState.updateWindowTitle())
-      .then(() => this.openLastFile());
+      .then(() => this.openLastFile())
+      .then(() => tauriWindow.appWindow.emit("frontend-ready"));
   }
 
   // opens the last Choreo file saved in LocalStorage, if it exists
@@ -84,8 +85,8 @@ export class DocumentManager {
     }
   }
 
-  async handleOpenFileEvent(event: Event<unknown>) {
-    const payload = event.payload as OpenFileEventPayload;
+  async handleOpenFileEvent(event: Event<OpenFileEventPayload>) {
+    const payload = event.payload;
     if (payload.dir === undefined || payload.name === undefined) {
       throw "Non-UTF-8 characters in file path";
     } else if (payload.contents === undefined) {
@@ -115,14 +116,38 @@ export class DocumentManager {
           );
         });
     }
+    tauriWindow.appWindow.emit("file-ready");
+  }
+
+  async generateAll(includeNonStale: boolean) {
+    await Promise.all(
+      this.model.document.pathlist.pathUUIDs.map((uuid) => {
+        const pathStore = this.model.document.pathlist.paths.get(uuid);
+        if (pathStore === undefined) {
+          throw "Path store is undefined";
+        }
+        if (pathStore.isTrajectoryStale || includeNonStale) {
+          this.model!.generatePath(uuid)
+        }
+
+      })
+    ).then(() => this.exportAllTrajectories());
   }
 
   async setupEventListeners() {
-    const openFileUnlisten = await listen("open-file", async (event) =>
-      this.handleOpenFileEvent(event).catch((err) =>
-        toast.error("Opening file error: " + err)
-      )
+    const openFileUnlisten = await listen<OpenFileEventPayload>(
+      "open-file",
+      async (event) => {
+        console.log(event);
+        this.handleOpenFileEvent(event).catch((err) =>
+          toast.error("Opening file error: " + err)
+        );
+      }
     );
+
+    const generateAllUnlisten = await listen("generate-all", async (event) => {
+      await this.generateAll();
+    });
 
     const fileOpenFromDirUnlisten = await listen(
       "file_event_payload_from_dir",
@@ -239,6 +264,7 @@ export class DocumentManager {
       fileOpenFromDirUnlisten();
       autoSaveUnlisten();
       updateTitleUnlisten();
+      generateAllUnlisten();
     });
     hotkeys.unbind();
     hotkeys("escape", () => {
@@ -258,6 +284,12 @@ export class DocumentManager {
     hotkeys("f5,ctrl+shift+r,ctrl+r", function (event, handler) {
       event.preventDefault();
     });
+    hotkeys("ctrl+shift+r", () => {
+      this.generateAll(false);
+    });
+    hotkeys("ctrl+r", () => {
+      this.openLastFile();
+    });
     hotkeys("command+g,ctrl+g,g", () => {
       if (!this.model.document.pathlist.activePath.generating) {
         this.generateWithToastsAndExport(
@@ -266,6 +298,7 @@ export class DocumentManager {
       }
     });
     hotkeys("command+z,ctrl+z", () => {
+
       this.undo();
     });
     hotkeys("command+shift+z,ctrl+shift+z,ctrl+y", () => {
